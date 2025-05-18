@@ -1,0 +1,76 @@
+module sync_ram #(
+    parameter ADDR_WIDTH = 4,              // 4-bit address = 16 locations
+    parameter DATA_WIDTH = 8               // 8-bit data per location
+)(
+    input clk,
+    input we,                              // write enable
+    input re,                              // read enable
+    input [ADDR_WIDTH-1:0] addr,
+    input [DATA_WIDTH-1:0] din,            // data input
+    output reg [DATA_WIDTH-1:0] dout       // data output
+);
+
+    // Memory array
+    reg [DATA_WIDTH-1:0] mem [0:(1<<ADDR_WIDTH)-1];
+
+    always @(posedge clk) begin
+        if (we) begin
+            mem[addr] <= din;             // Write operation
+        end
+        if (re) begin
+            dout <= mem[addr];            // Read operation
+        end
+    end
+
+endmodule
+module tb_sync_ram;
+
+    reg clk;
+    reg we, re;
+    reg [3:0] addr;
+    reg [7:0] din;
+    wire [7:0] dout;
+
+    // Instantiate the RAM
+    sync_ram uut (
+        .clk(clk),
+        .we(we),
+        .re(re),
+        .addr(addr),
+        .din(din),
+        .dout(dout)
+    );
+
+    // Generate clock
+    always #5 clk = ~clk;
+
+    initial begin
+        clk = 0;
+        we = 0; re = 0;
+        addr = 0; din = 0;
+
+        // Write 0xAA to address 2
+        #10;
+        addr = 4'd2; din = 8'hAA; we = 1; re = 0;
+        #10;
+        we = 0;
+
+        // Write 0x55 to address 5
+        addr = 4'd5; din = 8'h55; we = 1; re = 0;
+        #10;
+        we = 0;
+
+        // Read from address 2
+        addr = 4'd2; re = 1;
+        #10;
+        re = 0;
+
+        // Read from address 5
+        addr = 4'd5; re = 1;
+        #10;
+        re = 0;
+
+        $finish;
+    end
+
+endmodule
